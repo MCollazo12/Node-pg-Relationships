@@ -25,6 +25,7 @@ router.get('/:id', async (req, res, next) => {
               i.paid,
               i.add_date,
               i.paid_date,
+              c.code,
               c.name,
               c.description
         FROM invoices AS i
@@ -63,7 +64,15 @@ router.post('/', async (req, res, next) => {
   try {
     let { comp_code, amt } = req.body;
 
-    const result = db.query(
+    const compResult = await db.query(`SELECT * FROM companies WHERE code=$1`, [
+      comp_code,
+    ]);
+
+    if (!compResult.rows[0]) {
+      throw new ExpressError(`Company with code ${comp_code} not found`, 404);
+    }
+
+    const result = await db.query(
       `
       INSERT INTO invoices (comp_code, amt)
       VALUES ($1, $2)
@@ -97,7 +106,6 @@ router.put('/:id', async (req, res, next) => {
 
     return res.json({ invoice: result.rows[0] });
   } catch (err) {
-    console.error('Error updating invoice:', err)
     return next(err);
   }
 });
